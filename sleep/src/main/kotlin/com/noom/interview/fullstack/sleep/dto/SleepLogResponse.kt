@@ -8,5 +8,6 @@ data class SleepLogResponse(
     val bedTime: String,
     val wakeTime: String,
     val timeInBedMinutes: Long,
-    val morningFeeling: MorningFeeling
+    val morningFeeling: MorningFeeling,
+    val userId: Long
 )
