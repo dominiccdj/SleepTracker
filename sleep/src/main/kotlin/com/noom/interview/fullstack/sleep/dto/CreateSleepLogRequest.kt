@@ -6,5 +6,6 @@ import java.time.LocalDateTime
 data class CreateSleepLogRequest(
     val bedTime: LocalDateTime,
     val wakeTime: LocalDateTime,
-    val morningFeeling: MorningFeeling
+    val morningFeeling: MorningFeeling,
+    val userId: Long
 )
