@@ -26,7 +26,8 @@ jobs:
     - name: Build with Gradle
       working-directory: ./sleep
       run: |
-        ls ./sleep/
+        pwd
+        ls
         ./sleep/gradlew build
 
   
