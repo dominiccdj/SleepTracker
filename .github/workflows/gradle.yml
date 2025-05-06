@@ -24,6 +24,7 @@ jobs:
       run: chmod +x ./sleep/gradlew
       
     - name: Build with Gradle
+      working-directory: ./sleep
       run: ./sleep/gradlew build
 
   
