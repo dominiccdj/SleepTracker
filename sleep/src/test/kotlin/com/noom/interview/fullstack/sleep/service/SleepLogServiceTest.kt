@@ -16,6 +16,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.Month
 import java.util.Optional
 
@@ -211,5 +212,106 @@ class SleepLogServiceTest {
         // Then
         verify(exactly = 1) { sleepLogRepository.findTopByUserIdOrderByDateDescWakeTimeDesc(userId) }
         assertEquals(null, response)
+    }
+
+    @Test
+    fun `should calculate correct averages for 30 day period`() {
+        // Given
+        val userId = 1L
+        val user = User(id = userId, username = "testuser", email = "test@example.com")
+        val today = LocalDate.now()
+        val startDate = today.minusDays(29)
+
+        // Create test sleep logs with different morning feelings
+        val sleepLogs = listOf(
+            createSleepLog(1L, today.minusDays(1), "22:30", "06:45", 495, MorningFeeling.GOOD, user),
+            createSleepLog(2L, today.minusDays(2), "23:00", "07:00", 480, MorningFeeling.OK, user),
+            createSleepLog(3L, today.minusDays(3), "22:45", "06:30", 465, MorningFeeling.GOOD, user),
+            createSleepLog(4L, today.minusDays(4), "23:15", "07:15", 480, MorningFeeling.BAD, user),
+            createSleepLog(5L, today.minusDays(5), "22:00", "06:00", 480, MorningFeeling.GOOD, user)
+        )
+
+        every {
+            sleepLogRepository.findByUserIdAndDateBetween(userId, startDate, today)
+        } returns sleepLogs
+
+        // When
+        val result = sleepLogService.getLast30DayAverages(userId)
+
+        // Then
+        verify(exactly = 1) { sleepLogRepository.findByUserIdAndDateBetween(userId, startDate, today) }
+
+        assertEquals(startDate.toString(), result.startDate)
+        assertEquals(today.toString(), result.endDate)
+
+        // Average time in bed should be (495 + 480 + 465 + 480 + 480) / 5 = 480
+        assertEquals(480.0, result.averageTimeInBedMinutes)
+
+        // Average bed time should be around 22:42
+        assertEquals("22:42", result.averageBedTime)
+
+        // Average wake time should be around 06:42
+        assertEquals("06:42", result.averageWakeTime)
+
+        // Feeling frequencies: 3 GOOD, 1 OK, 1 BAD
+        assertEquals(3, result.morningFeelingFrequencies["GOOD"])
+        assertEquals(1, result.morningFeelingFrequencies["OK"])
+        assertEquals(1, result.morningFeelingFrequencies["BAD"])
+    }
+
+    @Test
+    fun `should return default values when no sleep logs exist`() {
+        // Given
+        val userId = 1L
+        val today = LocalDate.now()
+        val startDate = today.minusDays(29)
+
+        every {
+            sleepLogRepository.findByUserIdAndDateBetween(userId, startDate, today)
+        } returns emptyList()
+
+        // When
+        val result = sleepLogService.getLast30DayAverages(userId)
+
+        // Then
+        verify(exactly = 1) { sleepLogRepository.findByUserIdAndDateBetween(userId, startDate, today) }
+
+        assertEquals(startDate.toString(), result.startDate)
+        assertEquals(today.toString(), result.endDate)
+        assertEquals(0.0, result.averageTimeInBedMinutes)
+        assertEquals("00:00", result.averageBedTime)
+        assertEquals("00:00", result.averageWakeTime)
+        assertEquals(0, result.morningFeelingFrequencies["GOOD"])
+        assertEquals(0, result.morningFeelingFrequencies["OK"])
+        assertEquals(0, result.morningFeelingFrequencies["BAD"])
+    }
+
+    private fun createSleepLog(
+        id: Long,
+        date: LocalDate,
+        bedTimeStr: String,
+        wakeTimeStr: String,
+        timeInBedMinutes: Long,
+        feeling: MorningFeeling,
+        user: User
+    ): SleepLog {
+        val bedTime = LocalDateTime.of(
+            date.minusDays(1),
+            LocalTime.parse(bedTimeStr)
+        )
+        val wakeTime = LocalDateTime.of(
+            date,
+            LocalTime.parse(wakeTimeStr)
+        )
+
+        return SleepLog(
+            id = id,
+            date = date,
+            bedTime = bedTime,
+            wakeTime = wakeTime,
+            timeInBedMinutes = timeInBedMinutes,
+            morningFeeling = feeling,
+            user = user
+        )
     }
 }

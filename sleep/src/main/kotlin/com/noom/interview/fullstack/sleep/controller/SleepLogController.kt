@@ -1,6 +1,7 @@
 package com.noom.interview.fullstack.sleep.controller
 
 import com.noom.interview.fullstack.sleep.dto.CreateSleepLogRequest
+import com.noom.interview.fullstack.sleep.dto.SleepAveragesResponse
 import com.noom.interview.fullstack.sleep.dto.SleepLogResponse
 import com.noom.interview.fullstack.sleep.service.SleepLogService
 import org.springframework.http.HttpStatus
@@ -22,6 +23,12 @@ class SleepLogController(private val sleepLogService: SleepLogService) {
         return ResponseEntity(response, HttpStatus.CREATED)
     }
 
+    @GetMapping("/users/{userId}")
+    fun getAllSleepLogsByUserId(@PathVariable userId: Long): ResponseEntity<List<SleepLogResponse>> {
+        val sleepLogs = sleepLogService.getAllSleepLogsByUserId(userId)
+        return ResponseEntity.ok(sleepLogs)
+    }
+
     @GetMapping("/users/{userId}/last-night")
     fun getLastNightSleepByUserId(@PathVariable userId: Long): ResponseEntity<SleepLogResponse> {
         val sleepLog = sleepLogService.getLastNightSleepByUserId(userId)
@@ -33,9 +40,9 @@ class SleepLogController(private val sleepLogService: SleepLogService) {
         }
     }
 
-    @GetMapping("/users/{userId}")
-    fun getAllSleepLogsByUserId(@PathVariable userId: Long): ResponseEntity<List<SleepLogResponse>> {
-        val sleepLogs = sleepLogService.getAllSleepLogsByUserId(userId)
-        return ResponseEntity.ok(sleepLogs)
+    @GetMapping("/users/{userId}/averages/30-day")
+    fun getLast30DayAverages(@PathVariable userId: Long): ResponseEntity<SleepAveragesResponse> {
+        val averages = sleepLogService.getLast30DayAverages(userId)
+        return ResponseEntity.ok(averages)
     }
 }

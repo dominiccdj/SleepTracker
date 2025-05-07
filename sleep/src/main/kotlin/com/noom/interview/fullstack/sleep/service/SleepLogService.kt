@@ -1,13 +1,16 @@
 package com.noom.interview.fullstack.sleep.service
 
 import com.noom.interview.fullstack.sleep.dto.CreateSleepLogRequest
+import com.noom.interview.fullstack.sleep.dto.SleepAveragesResponse
 import com.noom.interview.fullstack.sleep.dto.SleepLogResponse
+import com.noom.interview.fullstack.sleep.model.MorningFeeling
 import com.noom.interview.fullstack.sleep.model.SleepLog
 import com.noom.interview.fullstack.sleep.repository.SleepLogRepository
 import com.noom.interview.fullstack.sleep.repository.UserRepository
 import org.springframework.stereotype.Service
 import java.time.Duration
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 @Service
@@ -76,5 +79,59 @@ class SleepLogService(
                 userId = sleepLog.user.id!!
             )
         }
+    }
+
+    fun getLast30DayAverages(userId: Long): SleepAveragesResponse {
+        val endDate = LocalDate.now()
+        val startDate = endDate.minusDays(29) // 30 days including today
+
+        val sleepLogs = sleepLogRepository.findByUserIdAndDateBetween(userId, startDate, endDate)
+
+        if (sleepLogs.isEmpty()) {
+            return SleepAveragesResponse(
+                startDate = startDate.toString(),
+                endDate = endDate.toString(),
+                averageTimeInBedMinutes = 0.0,
+                averageBedTime = "00:00",
+                averageWakeTime = "00:00",
+                morningFeelingFrequencies = mapOf("BAD" to 0, "OK" to 0, "GOOD" to 0)
+            )
+        }
+
+        // Calculate average time in bed
+        val avgTimeInBed = sleepLogs.map { it.timeInBedMinutes }.average()
+
+        // Calculate average bedtime and wake time
+        val avgBedTime = calculateAverageTime(sleepLogs.map { it.bedTime.toLocalTime() })
+        val avgWakeTime = calculateAverageTime(sleepLogs.map { it.wakeTime.toLocalTime() })
+
+        // Calculate feeling frequencies
+        val feelingFrequencies = sleepLogs
+            .groupBy { it.morningFeeling }
+            .mapValues { it.value.size }
+            .withDefault { 0 }
+
+        return SleepAveragesResponse(
+            startDate = startDate.toString(),
+            endDate = endDate.toString(),
+            averageTimeInBedMinutes = avgTimeInBed,
+            averageBedTime = avgBedTime.format(DateTimeFormatter.ofPattern("HH:mm")),
+            averageWakeTime = avgWakeTime.format(DateTimeFormatter.ofPattern("HH:mm")),
+            morningFeelingFrequencies = mapOf(
+                "BAD" to (feelingFrequencies.getValue(MorningFeeling.BAD)),
+                "OK" to (feelingFrequencies.getValue(MorningFeeling.OK)),
+                "GOOD" to (feelingFrequencies.getValue(MorningFeeling.GOOD))
+            )
+        )
+    }
+
+    private fun calculateAverageTime(times: List<LocalTime>): LocalTime {
+        if (times.isEmpty()) return LocalTime.MIDNIGHT
+
+        val totalSeconds = times.sumOf {
+            it.toSecondOfDay().toLong()
+        }
+
+        return LocalTime.ofSecondOfDay((totalSeconds / times.size))
     }
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.ninjasquad.springmockk.MockkBean
 import com.noom.interview.fullstack.sleep.dto.CreateSleepLogRequest
+import com.noom.interview.fullstack.sleep.dto.SleepAveragesResponse
 import com.noom.interview.fullstack.sleep.dto.SleepLogResponse
 import com.noom.interview.fullstack.sleep.model.MorningFeeling
 import com.noom.interview.fullstack.sleep.service.SleepLogService
@@ -19,6 +20,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.Month
 
@@ -215,5 +217,79 @@ class SleepLogControllerTest {
             .andExpect(jsonPath("$.length()").value(0))
 
         verify(exactly = 1) { sleepLogService.getAllSleepLogsByUserId(userId) }
+    }
+
+    @Test
+    fun `should return 30-day averages`() {
+        // Given
+        val userId = 1L
+        val today = LocalDate.now()
+        val startDate = today.minusDays(29)
+
+        val response = SleepAveragesResponse(
+            startDate = startDate.toString(),
+            endDate = today.toString(),
+            averageTimeInBedMinutes = 480.0,
+            averageBedTime = "22:42",
+            averageWakeTime = "06:42",
+            morningFeelingFrequencies = mapOf(
+                "GOOD" to 3,
+                "OK" to 1,
+                "BAD" to 1
+            )
+        )
+
+        every { sleepLogService.getLast30DayAverages(userId) } returns response
+
+        // When & Then
+        mockMvc.perform(
+            get("/api/sleep-logs/users/$userId/averages/30-day")
+                .contentType(MediaType.APPLICATION_JSON)
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.startDate").value(startDate.toString()))
+            .andExpect(jsonPath("$.endDate").value(today.toString()))
+            .andExpect(jsonPath("$.averageTimeInBedMinutes").value(480.0))
+            .andExpect(jsonPath("$.averageBedTime").value("22:42"))
+            .andExpect(jsonPath("$.averageWakeTime").value("06:42"))
+            .andExpect(jsonPath("$.morningFeelingFrequencies.GOOD").value(3))
+            .andExpect(jsonPath("$.morningFeelingFrequencies.OK").value(1))
+            .andExpect(jsonPath("$.morningFeelingFrequencies.BAD").value(1))
+
+        verify(exactly = 1) { sleepLogService.getLast30DayAverages(userId) }
+    }
+
+    @Test
+    fun `should return empty statistics when no data exists`() {
+        // Given
+        val userId = 1L
+        val today = LocalDate.now()
+        val startDate = today.minusDays(29)
+
+        val response = SleepAveragesResponse(
+            startDate = startDate.toString(),
+            endDate = today.toString(),
+            averageTimeInBedMinutes = 0.0,
+            averageBedTime = "00:00",
+            averageWakeTime = "00:00",
+            morningFeelingFrequencies = mapOf(
+                "GOOD" to 0,
+                "OK" to 0,
+                "BAD" to 0
+            )
+        )
+
+        every { sleepLogService.getLast30DayAverages(userId) } returns response
+
+        // When & Then
+        mockMvc.perform(
+            get("/api/sleep-logs/users/$userId/averages/30-day")
+                .contentType(MediaType.APPLICATION_JSON)
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.averageTimeInBedMinutes").value(0.0))
+            .andExpect(jsonPath("$.morningFeelingFrequencies.GOOD").value(0))
+
+        verify(exactly = 1) { sleepLogService.getLast30DayAverages(userId) }
     }
 }
