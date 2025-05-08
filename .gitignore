@@ -34,3 +34,4 @@ replay_pid*
 .idea/jarRepositories.xml
 .idea/gradle.xml
 /.idea/
+/db/
