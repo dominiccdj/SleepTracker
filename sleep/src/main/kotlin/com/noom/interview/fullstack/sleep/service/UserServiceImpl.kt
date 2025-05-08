@@ -10,6 +10,16 @@ import org.springframework.stereotype.Service
 class UserServiceImpl(private val userRepository: UserRepository) : UserService {
 
     override fun createUser(request: CreateUserRequest): UserResponse {
+        // Check if username already exists
+        userRepository.findByUsername(request.username)?.let {
+            throw IllegalArgumentException("Username '${request.username}' is already taken")
+        }
+
+        // Check if email already exists
+        userRepository.findByEmail(request.email)?.let {
+            throw IllegalArgumentException("Email '${request.email}' is already registered")
+        }
+
         val user = User(
             username = request.username,
             email = request.email

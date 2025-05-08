@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import java.util.Optional
 
 class UserServiceTest {
@@ -30,7 +31,7 @@ class UserServiceTest {
     }
 
     @Test
-    fun `should create user successfully`() {
+    fun `should create user successfully when username and email are unique`() {
         // Given
         val request = CreateUserRequest(
             username = "testuser",
@@ -44,12 +45,16 @@ class UserServiceTest {
             email = "test@example.com"
         )
 
+        every { userRepository.findByUsername("testuser") } returns null
+        every { userRepository.findByEmail("test@example.com") } returns null
         every { userRepository.save(capture(userSlot)) } returns savedUser
 
         // When
         val response = userService.createUser(request)
 
         // Then
+        verify(exactly = 1) { userRepository.findByUsername("testuser") }
+        verify(exactly = 1) { userRepository.findByEmail("test@example.com") }
         verify(exactly = 1) { userRepository.save(any()) }
 
         val capturedUser = userSlot.captured
@@ -59,6 +64,61 @@ class UserServiceTest {
         assertEquals(1L, response.id)
         assertEquals("testuser", response.username)
         assertEquals("test@example.com", response.email)
+    }
+
+    @Test
+    fun `should throw exception when username already exists`() {
+        // Given
+        val request = CreateUserRequest(
+            username = "existinguser",
+            email = "new@example.com"
+        )
+
+        val existingUser = User(
+            id = 1L,
+            username = "existinguser",
+            email = "existing@example.com"
+        )
+
+        every { userRepository.findByUsername("existinguser") } returns existingUser
+
+        // When & Then
+        val exception = assertThrows<IllegalArgumentException> {
+            userService.createUser(request)
+        }
+
+        assertEquals("Username 'existinguser' is already taken", exception.message)
+        verify(exactly = 1) { userRepository.findByUsername("existinguser") }
+        verify(exactly = 0) { userRepository.findByEmail(any()) }
+        verify(exactly = 0) { userRepository.save(any()) }
+    }
+
+    @Test
+    fun `should throw exception when email already exists`() {
+        // Given
+        val request = CreateUserRequest(
+            username = "newuser",
+            email = "existing@example.com"
+        )
+
+        val existingUser = User(
+            id = 1L,
+            username = "existinguser",
+            email = "existing@example.com"
+        )
+
+        every { userRepository.findByUsername("newuser") } returns null
+        every { userRepository.findByEmail("existing@example.com") } returns existingUser
+
+        // When & Then
+        val exception = assertThrows<IllegalArgumentException> {
+            userService.createUser(request)
+        }
+
+        assertEquals("Email 'existing@example.com' is already registered", exception.message)
+        verify(exactly = 1) { userRepository.findByUsername("newuser") }
+        verify(exactly = 1) { userRepository.findByEmail("existing@example.com") }
+        verify(exactly = 0) { userRepository.save(any()) }
     }
 
     @Test
