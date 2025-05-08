@@ -26,7 +26,7 @@ class UserServiceTest {
     @BeforeEach
     fun setup() {
         MockKAnnotations.init(this)
-        userService = UserService(userRepository)
+        userService = UserServiceImpl(userRepository)
     }
 
     @Test

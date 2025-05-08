@@ -2,45 +2,31 @@ package com.noom.interview.fullstack.sleep.service
 
 import com.noom.interview.fullstack.sleep.dto.CreateUserRequest
 import com.noom.interview.fullstack.sleep.dto.UserResponse
-import com.noom.interview.fullstack.sleep.model.User
-import com.noom.interview.fullstack.sleep.repository.UserRepository
-import org.springframework.stereotype.Service
 
-@Service
-class UserService(private val userRepository: UserRepository) {
+/**
+ * Service interface for user-related operations.
+ */
+interface UserService {
+    /**
+     * Creates a new user.
+     *
+     * @param request The user creation request containing username and email
+     * @return The created user response with generated ID
+     */
+    fun createUser(request: CreateUserRequest): UserResponse
 
-    fun createUser(request: CreateUserRequest): UserResponse {
-        val user = User(
-            username = request.username,
-            email = request.email
-        )
+    /**
+     * Retrieves a user by their ID.
+     *
+     * @param id The ID of the user to retrieve
+     * @return The user response if found, null otherwise
+     */
+    fun getUserById(id: Long): UserResponse?
 
-        val savedUser = userRepository.save(user)
-
-        return UserResponse(
-            id = savedUser.id,
-            username = savedUser.username,
-            email = savedUser.email
-        )
-    }
-
-    fun getUserById(id: Long): UserResponse? {
-        val user = userRepository.findById(id).orElse(null) ?: return null
-
-        return UserResponse(
-            id = user.id,
-            username = user.username,
-            email = user.email
-        )
-    }
-
-    fun getAllUsers(): List<UserResponse> {
-        return userRepository.findAll().map { user ->
-            UserResponse(
-                id = user.id,
-                username = user.username,
-                email = user.email
-            )
-        }
-    }
+    /**
+     * Retrieves all users.
+     *
+     * @return A list of all users
+     */
+    fun getAllUsers(): List<UserResponse>
 }
