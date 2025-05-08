@@ -117,3 +117,28 @@ Response:
 }
 ```
 
+## API Testing with Postman
+
+A Postman collection is included in this repository to help you quickly test the Sleep Logger API. The collection contains pre-configured requests for all available endpoints.
+
+### Using the Postman Collection
+
+1. Download and install [Postman](https://www.postman.com/downloads/)
+2. Import the collection:
+    - Click "Import" in Postman
+    - Select the `SleepTracker.postman_collection.json` file from this repository
+3. Start the application using Docker Compose
+4. Execute the requests in the following recommended order:
+    - Create a new user
+    - Create a new sleep log (using the user ID from the previous response)
+    - Get all sleep logs for a user
+    - Get the most recent sleep log for a user
+    - Get 30-day sleep statistics
+
+The collection includes requests for all API endpoints:
+
+- User management (create, get by ID, get all)
+- Sleep log creation and retrieval
+- Sleep statistics and averages
+
+This makes it easy to test the application without writing any code or using command-line tools like curl.

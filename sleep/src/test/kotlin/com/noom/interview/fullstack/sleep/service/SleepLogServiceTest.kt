@@ -33,7 +33,7 @@ class SleepLogServiceTest {
     @BeforeEach
     fun setup() {
         MockKAnnotations.init(this)
-        sleepLogService = SleepLogService(sleepLogRepository, userRepository)
+        sleepLogService = SleepLogServiceImpl(sleepLogRepository, userRepository)
     }
 
     @Test
