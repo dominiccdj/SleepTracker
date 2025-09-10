@@ -119,7 +119,7 @@ Response:
 
 ## API Testing with Postman
 
-A Postman collection is included in this repository to help you quickly test the Sleep Logger API. The collection contains pre-configured requests for all available endpoints.
+A Postman collection is included in this repository to help you quickly test the Sleep Logger API. The collection contains pre-configured requests for all available endpoints!
 
 ### Using the Postman Collection
 
